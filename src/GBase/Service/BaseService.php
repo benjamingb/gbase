@@ -31,6 +31,11 @@ class BaseService extends EventProvider implements EventManagerAwareInterface
         return $this->mapper->findById($id);
     }
 
+    public function fetchPairs($cols, $where = null)
+    {
+        return $this->mapper->fetchPairs($cols, $where);
+    }
+    
     public function persist($entity)
     {
         if (is_array($entity)) {

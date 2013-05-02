@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * GnBit  (http://gnbit.com/)
+ * 
+ * @author: Benjamin Gonzales (benjamin@gnbit.com)
+ * @Copyright (c) 2013 GnBit.SAC - http://www.gnbit.com
+ * 
+ */
+
 namespace GBase\Mapper;
 
 use Zend\Db\Sql\Select;
@@ -20,9 +28,9 @@ Class BaseDbMapper extends AbstractDbMapper
      */
     public function getId()
     {
-        /*if (null === $this->id) {
-            
-        }*/
+        /* if (null === $this->id) {
+
+          } */
 
         return $this->id;
     }
@@ -31,7 +39,65 @@ Class BaseDbMapper extends AbstractDbMapper
     {
         return parent::getTableName();
     }
-    
+
+    /**
+     * 
+     * exaample 
+     * 
+     * $where = function(Select $select) {
+     *              $select->where(array('area_id' => 'A'))->order("facultad");
+     *         };
+     * 
+     *  
+     * @param array |  \GBase\Mapper\Closure $cols
+     * @param \GBase\Mapper\Closure $where
+     * @return type
+     */
+    public function fetchPairs($cols, $where = null)
+    {
+
+        $select = new Select;
+        $select->from($this->getTableName());
+
+        if ($cols instanceof \Closure) {
+            $cols($select);
+        } elseif (is_array($cols) && count($cols) > 1) {
+            $select->columns($cols);
+        } else {
+            return array();
+        }
+
+        if ($where instanceof \Closure) {
+            $where($select);
+        } elseif ($where !== null) {
+            $select->where($where);
+        }
+
+        $statement = $this->getSql()->prepareStatementForSqlObject($select);
+
+        $rowset = $statement->execute();
+
+        $columns = $select->getRawState('columns');
+
+        $key = array_keys($columns);
+        $value = array_values($columns);
+
+        $assoc = array();
+        foreach ($rowset as $row) {
+            $akey = isset($row[$key[0]]) ? $row[$key[0]] : $row[$value[0]];
+            $aValue = isset($row[$key[1]]) ? $row[$key[1]] : $row[$value[1]];
+            $assoc[$akey] = $aValue;
+        }
+
+        return $assoc;
+    }
+
+    /**
+     * find row by Id 
+     * 
+     * @param type $id
+     * @return type
+     */
     public function findById($id)
     {
         $select = new Select;
@@ -66,7 +132,6 @@ Class BaseDbMapper extends AbstractDbMapper
 
         return $entity;
     }
-
 
     /**
      * $attr Attribute to getter and setter
