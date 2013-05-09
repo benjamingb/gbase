@@ -15,6 +15,7 @@ use Zend\Db\Sql\Delete;
 use Zend\Db\Sql\Where;
 use Zend\Filter\Word\SeparatorToCamelCase;
 use ZfcBase\Mapper\AbstractDbMapper;
+use Zend\Stdlib\Hydrator\HydratorInterface;
 
 Class BaseDbMapper extends AbstractDbMapper
 {
@@ -109,6 +110,33 @@ Class BaseDbMapper extends AbstractDbMapper
 
         $result = $this->select($select->where($where))->current();
         return $result;
+    }
+
+    /**
+     * @param object|array $entity
+     * @param string|array|closure $where
+     * @param string|TableIdentifier|null $tableName
+     * @param HydratorInterface|null $hydrator
+     * @return ResultInterface
+     */
+    protected function update($entity, $where, $tableName = null, HydratorInterface $hydrator = null)
+    {
+        $this->initialize();
+        $tableName = $tableName ? : $this->tableName;
+
+        $sql = $this->getSql()->setTable($tableName);
+        $update = $sql->update();
+
+        $rowData = $this->entityToArray($entity, $hydrator);
+        $rowData = array_filter($rowData, 'strlen');
+        unset($rowData['created_at']);
+        
+        $update->set($rowData)
+                ->where($where);
+
+        $statement = $sql->prepareStatementForSqlObject($update);
+
+        return $statement->execute();
     }
 
     /**

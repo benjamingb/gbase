@@ -455,13 +455,14 @@ class Tree extends AbstractTableGateway
             $level = $info[$this->level] - 1;
         }
 
-        $data = $this->select(function($select) use ($info, $level) {
-                    $select->where("{$this->left} <= {$info[$this->left]}");
-                    $select->where("{$this->right} >= {$info[$this->right]}");
+        $keys = $this->getKeys();
+        $data = $this->select(function($select) use ($info, $level, $keys) {
+                    $select->where("{$keys['left']} <= {$info[$keys['left']]}");
+                    $select->where("{$keys['right']} >= {$info[$keys['right']]}");
                     if (null !== $level) {
-                        $select->where("{$this->level} = {$level}");
-                    } 
-                    $select->order($this->left);
+                        $select->where("{$keys['level']} = {$level}");
+                    }
+                    $select->order($keys['left']);
                 });
 
         $nodeSet = new NodeSet;
@@ -485,15 +486,14 @@ class Tree extends AbstractTableGateway
             $minLevel = $info[$this->level] + $startlevel;
         }
 
-        $data = $this->select(function($select) use ($info, $minLevel) {
-                    $select->where("{$this->left} >= {$info[$this->left]}");
-                    $select->where("{$this->right} <= {$info[$this->right]}");
+        $keys = $this->getKeys();
+        $data = $this->select(function($select) use ($info, $minLevel, $keys) {
+                    $select->where("{$keys['left']} >= {$info[$keys['left']]}");
+                    $select->where("{$keys['right']} <= {$info[$keys['right']]}");
                     if (null !== $minLevel) {
-                        $select->where("{$this->level} = {$minLevel}");
+                        $select->where("{$keys['level']} = {$minLevel}");
                     }
-                    $select->order($this->left);
-                    echo $select->getSqlString();
-                    exit;
+                    $select->order($keys['left']);
                 });
 
 
