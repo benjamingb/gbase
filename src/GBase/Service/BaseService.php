@@ -6,6 +6,7 @@ use Zend\EventManager\EventManager;
 use Zend\EventManager\EventManagerInterface;
 use Zend\EventManager\EventManagerAwareInterface;
 use Zend\Stdlib\Hydrator\ClassMethods;
+use Zend\ServiceManager\ServiceManager;
 use ZfcBase\EventManager\EventProvider;
 
 class BaseService extends EventProvider implements EventManagerAwareInterface

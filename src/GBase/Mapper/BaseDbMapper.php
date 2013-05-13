@@ -130,13 +130,23 @@ Class BaseDbMapper extends AbstractDbMapper
         $rowData = $this->entityToArray($entity, $hydrator);
         $rowData = array_filter($rowData, 'strlen');
         unset($rowData['created_at']);
-        
+
         $update->set($rowData)
                 ->where($where);
 
         $statement = $sql->prepareStatementForSqlObject($update);
 
         return $statement->execute();
+    }
+
+    /**
+     * @param string|array|closure $where
+     * @param string|TableIdentifier|null $tableName
+     * @return ResultInterface
+     */
+    public function delete($where, $tableName = null)
+    {
+        parent::delete($where, $tableName = null);
     }
 
     /**
