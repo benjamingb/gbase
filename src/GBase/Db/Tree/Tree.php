@@ -130,6 +130,10 @@ class Tree extends AbstractTableGateway
      */
     public function clear($data = array())
     {
+        /*$sql = 'SET FOREIGN_KEY_CHECKS=0;';
+        $sql .= 'TRUNCATE ' . $this->table;
+        $sql .= 'SET FOREIGN_KEY_CHECKS=1;';*/
+
         // clearing table
         $statement = $this->adapter->query('TRUNCATE ' . $this->table);
         $statement->execute();
