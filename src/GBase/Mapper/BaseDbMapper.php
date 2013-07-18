@@ -13,6 +13,7 @@ namespace GBase\Mapper;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Delete;
 use Zend\Db\Sql\Where;
+use Zend\Db\ResultSet\ResultSet;
 use Zend\Filter\Word\SeparatorToCamelCase;
 use ZfcBase\Mapper\AbstractDbMapper;
 use Zend\Stdlib\Hydrator\HydratorInterface;
@@ -20,8 +21,19 @@ use Zend\Stdlib\Hydrator\HydratorInterface;
 Class BaseDbMapper extends AbstractDbMapper
 {
 
+    /**
+     * Tbale Nane
+     * @var string 
+     */
     protected $tableName = null;
+
+    /**
+     * Id table Database
+     * 
+     * @var string | int 
+     */
     protected $id = null;
+    protected $joins = array();
 
     /**
      * PrimaryKey Table  
@@ -113,6 +125,21 @@ Class BaseDbMapper extends AbstractDbMapper
     }
 
     /**
+     * Retorna los resultado en un Resulset
+     * @param \Zend\Db\Sql\Select $select
+     * @return \Zend\Db\ResultSet\ResultSet
+     */
+    public function executeResultSet(Select $select)
+    {
+        $statement = $this->getSql()->prepareStatementForSqlObject($select);
+        $rowset = $statement->execute();
+
+        $resultSet = new ResultSet();
+        $resultSet->initialize($rowset);
+        return $resultSet;
+    }
+
+    /**
      * @param object|array $entity
      * @param string|array|closure $where
      * @param string|TableIdentifier|null $tableName
@@ -128,8 +155,13 @@ Class BaseDbMapper extends AbstractDbMapper
         $update = $sql->update();
 
         $rowData = $this->entityToArray($entity, $hydrator);
-        $rowData = array_filter($rowData, 'strlen');
-        unset($rowData['created_at']);
+
+        //$rowData = array_filter($rowData, 'strlen');// quita todos los nulos y vacios
+        $rowData = array_filter($rowData, function($element) {
+                    return !is_null($element); //retorna solo aquelos que no son null;
+                });
+
+        unset($rowData['created_at']); //quita el campo
 
         $update->set($rowData)
                 ->where($where);
@@ -137,6 +169,11 @@ Class BaseDbMapper extends AbstractDbMapper
         $statement = $sql->prepareStatementForSqlObject($update);
 
         return $statement->execute();
+    }
+
+    protected function filterNull(array $data = array())
+    {
+        
     }
 
     /**
@@ -156,6 +193,7 @@ Class BaseDbMapper extends AbstractDbMapper
      */
     public function persist($entity)
     {
+
         $getEntityId = $this->entityMethod($this->getId(), 'get');
         $setEntityId = $this->entityMethod($this->getId(), 'set');
 
@@ -184,6 +222,18 @@ Class BaseDbMapper extends AbstractDbMapper
         $filter = new SeparatorToCamelCase('_');
         $method = $filter->filter($attr);
         return $type . $method;
+    }
+
+    /**
+     * Select table 
+     * 
+     * @return \Zend\Db\Sql\Select
+     */
+    protected function getSelectAlias()
+    {
+        $select = new Select;
+        $select->from(array('t1' => $this->getTableName()));
+        return $select;
     }
 
 }

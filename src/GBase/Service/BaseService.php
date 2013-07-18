@@ -50,6 +50,7 @@ class BaseService extends EventProvider implements EventManagerAwareInterface
         $events->trigger(get_class($this->getMapper()->getEntityPrototype()) . ".post", $this, array(
             $this->getMapper()->getTableName() => $entity
         ));
+
         return $entity;
     }
 
