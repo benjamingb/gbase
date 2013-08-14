@@ -111,7 +111,7 @@ Class BaseDbMapper extends AbstractDbMapper
      * @param type $id
      * @return type
      */
-    public function findById($id)
+    public function findById($id, $toArray = false)
     {
         $select = new Select;
         $select->from($this->getTableName());
@@ -120,8 +120,13 @@ Class BaseDbMapper extends AbstractDbMapper
         $where->equalTo($this->getId(), $id);
 
 
-        $result = $this->select($select->where($where))->current();
-        return $result;
+        if (!$toArray) {
+            $result = $this->select($select->where($where))->current();
+            return $result;
+        }
+        
+        $result = $this->select($select->where($where))->toArray();
+        return $result[0];
     }
 
     /**

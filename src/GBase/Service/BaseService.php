@@ -36,7 +36,12 @@ class BaseService extends EventProvider implements EventManagerAwareInterface
     {
         return $this->mapper->fetchPairs($cols, $where);
     }
-    
+
+    public function delete($where, $tableName = null)
+    {
+        return $this->mapper->delete($where, $tableName);
+    }
+
     public function persist($entity)
     {
         if (is_array($entity)) {
