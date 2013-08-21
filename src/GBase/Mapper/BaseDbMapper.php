@@ -17,6 +17,8 @@ use Zend\Db\ResultSet\ResultSet;
 use Zend\Filter\Word\SeparatorToCamelCase;
 use ZfcBase\Mapper\AbstractDbMapper;
 use Zend\Stdlib\Hydrator\HydratorInterface;
+use Zend\ServiceManager\ServiceManager;
+use Zend\Stdlib\Hydrator\ClassMethods;
 
 Class BaseDbMapper extends AbstractDbMapper
 {
@@ -33,7 +35,11 @@ Class BaseDbMapper extends AbstractDbMapper
      * @var string | int 
      */
     protected $id = null;
-    protected $joins = array();
+
+    /**
+     * @var ServiceManager
+     */
+    protected $serviceManager;
 
     /**
      * PrimaryKey Table  
@@ -41,10 +47,6 @@ Class BaseDbMapper extends AbstractDbMapper
      */
     public function getId()
     {
-        /* if (null === $this->id) {
-
-          } */
-
         return $this->id;
     }
 
@@ -124,7 +126,7 @@ Class BaseDbMapper extends AbstractDbMapper
             $result = $this->select($select->where($where))->current();
             return $result;
         }
-        
+
         $result = $this->select($select->where($where))->toArray();
         return $result[0];
     }
@@ -163,7 +165,7 @@ Class BaseDbMapper extends AbstractDbMapper
 
         //$rowData = array_filter($rowData, 'strlen');// quita todos los nulos y vacios
         $rowData = array_filter($rowData, function($element) {
-                    return !is_null($element); //retorna solo aquelos que no son null;
+                    return !is_null($element); //retorna solo aquellos que no son null;
                 });
 
         unset($rowData['created_at']); //quita el campo
@@ -174,11 +176,6 @@ Class BaseDbMapper extends AbstractDbMapper
         $statement = $sql->prepareStatementForSqlObject($update);
 
         return $statement->execute();
-    }
-
-    protected function filterNull(array $data = array())
-    {
-        
     }
 
     /**
@@ -198,6 +195,12 @@ Class BaseDbMapper extends AbstractDbMapper
      */
     public function persist($entity)
     {
+        
+       
+        if (is_array($entity)) {
+            $hydrator = new ClassMethods;
+            $entity = $hydrator->hydrate($entity, $this->getEntityPrototype());
+        }
 
         $getEntityId = $this->entityMethod($this->getId(), 'get');
         $setEntityId = $this->entityMethod($this->getId(), 'set');
@@ -239,6 +242,28 @@ Class BaseDbMapper extends AbstractDbMapper
         $select = new Select;
         $select->from(array('t1' => $this->getTableName()));
         return $select;
+    }
+
+    /**
+     * Retrieve service manager instance
+     *
+     * @return ServiceManager
+     */
+    public function getServiceManager()
+    {
+        return $this->serviceManager;
+    }
+
+    /**
+     * Set service manager instance
+     *
+     * @param ServiceManager $serviceManager
+     * @return User
+     */
+    public function setServiceManager(ServiceManager $serviceManager)
+    {
+        $this->serviceManager = $serviceManager;
+        return $this;
     }
 
 }
