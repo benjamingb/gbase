@@ -115,11 +115,11 @@ class Tree extends AbstractTableGateway
 
     public function getKeys()
     {
-        $keys = array();
-        $keys['id'] = $this->id;
-        $keys['left'] = $this->left;
+        $keys          = array();
+        $keys['id']    = $this->id;
+        $keys['left']  = $this->left;
         $keys['right'] = $this->right;
-        $keys['pid'] = $this->pid;
+        $keys['pid']   = $this->pid;
         $keys['level'] = $this->level;
         return $keys;
     }
@@ -130,17 +130,18 @@ class Tree extends AbstractTableGateway
      */
     public function clear($data = array())
     {
-        /*$sql = 'SET FOREIGN_KEY_CHECKS=0;';
-        $sql .= 'TRUNCATE ' . $this->table;
-        $sql .= 'SET FOREIGN_KEY_CHECKS=1;';*/
+        /* $sql = 'SET FOREIGN_KEY_CHECKS=0;';
+          $sql .= 'TRUNCATE ' . $this->table;
+          $sql .= 'SET FOREIGN_KEY_CHECKS=1;'; */
 
         // clearing table
-        $statement = $this->adapter->query('TRUNCATE ' . $this->table);
-        $statement->execute();
+        $this->adapter->query('SET FOREIGN_KEY_CHECKS=0')->execute();
+        $this->adapter->query('TRUNCATE ' . $this->table)->execute();
+        $this->adapter->query('SET FOREIGN_KEY_CHECKS=1')->execute();
 
         // prepare data for root element
-        $data[$this->pid] = 0;
-        $data[$this->left] = 1;
+        $data[$this->pid]   = 0;
+        $data[$this->left]  = 1;
         $data[$this->right] = 2;
         $data[$this->level] = 0;
 
@@ -156,7 +157,7 @@ class Tree extends AbstractTableGateway
     public function getNodeInfo($ID)
     {
         $rowset = $this->select(array($this->id => $ID));
-        $row = $rowset->current();
+        $row    = $rowset->current();
         if (!$row) {
             return array();
         }
@@ -176,10 +177,10 @@ class Tree extends AbstractTableGateway
             return false;
         }
 
-        $data[$this->left] = $info[$this->right];
+        $data[$this->left]  = $info[$this->right];
         $data[$this->right] = $info[$this->right] + 1;
         $data[$this->level] = $info[$this->level] + 1;
-        $data[$this->pid] = $id;
+        $data[$this->pid]   = $id;
 
 
         // creating a place for the record being inserted
@@ -190,12 +191,12 @@ class Tree extends AbstractTableGateway
                 $update = new Update();
                 $update->table($this->table);
                 $update->set(array(
-                    $this->left => new Expression("IF({$this->left} > {$info[$this->left]}, {$this->left}+2, {$this->left})"),
+                    $this->left  => new Expression("IF({$this->left} > {$info[$this->left]}, {$this->left}+2, {$this->left})"),
                     $this->right => new Expression("IF({$this->right} >= {$info[$this->right]}, {$this->right}+2, {$this->right})")
                 ));
                 $update->where("{$this->right} >= {$info[$this->right]}");
 
-                $sql = new Sql($this->adapter);
+                $sql       = new Sql($this->adapter);
                 $statement = $sql->prepareStatementForSqlObject($update);
                 $statement->execute();
 
@@ -225,8 +226,8 @@ class Tree extends AbstractTableGateway
     {
 
         $qi = function($name) {
-                    return $this->adapter->platform->quoteIdentifier($name);
-                };
+            return $this->adapter->platform->quoteIdentifier($name);
+        };
 
         $select = "SELECT t1.*, COUNT(t1.{$this->id}) AS rep, MAX(t3.{$this->right}) AS maxright ";
         $select .=" FROM {$qi($this->table)} as t1, {$qi($this->table)} as t2, {$qi($this->table)} as t3 ";
@@ -238,7 +239,7 @@ class Tree extends AbstractTableGateway
         $select .=" HAVING maxright <> SQRT(4 * rep + 1) + 1";
 
         $statement = $this->adapter->query($select);
-        $results = $statement->execute();
+        $results   = $statement->execute();
         return $results->current();
     }
 
@@ -288,13 +289,13 @@ class Tree extends AbstractTableGateway
         $pInfo = $this->getNodeInfo($pId);
 
 
-        $leftId = $eInfo[$this->left];
+        $leftId  = $eInfo[$this->left];
         $rightId = $eInfo[$this->right];
-        $level = $eInfo[$this->level];
+        $level   = $eInfo[$this->level];
 
-        $leftIdP = $pInfo[$this->left];
+        $leftIdP  = $pInfo[$this->left];
         $rightIdP = $pInfo[$this->right];
-        $levelP = $pInfo[$this->level];
+        $levelP   = $pInfo[$this->level];
 
         if ($eId == $pId || $leftId == $leftIdP || ($leftIdP >= $leftId && $leftIdP <= $rightId) || ($level == $levelP + 1 && $leftId > $leftIdP && $rightId < $rightIdP)) {
             //echo "alert('cant_move_tree');";
@@ -329,14 +330,16 @@ class Tree extends AbstractTableGateway
                     . 'OR ' . $this->right . ' BETWEEN ' . $leftId . ' AND ' . $rightIdP . ')';
         }
 
-        $this->adapter->beginTransaction();
+        $db = $this->getAdapter()->getDriver()->getConnection();
+        $db->beginTransaction();
         try {
-            $this->adapter->query($sql);
-            $this->adapter->commit();
+            $statement = $this->adapter->query($sql);
+            $statement->execute();
+            $db->commit();
             //echo "alert('node moved');";
             return true;
         } catch (Exception $e) {
-            $this->adapter->rollBack();
+            $db->rollBack();
             //echo "alert('node not moved: fatal error');";
             echo $e->getMessage();
             echo "<br>\r\n";
@@ -359,8 +362,8 @@ class Tree extends AbstractTableGateway
             $aInfo = $this->getNodeInfo($aId);
         }
 
-        $level = $eInfo[$this->level];
-        $left_key = $eInfo[$this->left];
+        $level     = $eInfo[$this->level];
+        $left_key  = $eInfo[$this->left];
         $right_key = $eInfo[$this->right];
         if ($pId == 0) {
             $level_up = 0;
@@ -369,13 +372,13 @@ class Tree extends AbstractTableGateway
         }
 
         $right_key_near = 0;
-        $left_key_near = 0;
+        $left_key_near  = 0;
 
         if ($pId == 0) { //move to root
             $right_key_near = $this->adapter->fetchOne('SELECT MAX(' . $this->right . ') FROM ' . $this->table);
         } elseif ($aId != 0 && $pID == $eInfo[$this->pid]) { // if we have after ID
             $right_key_near = $aInfo[$this->right];
-            $left_key_near = $aInfo[$this->left];
+            $left_key_near  = $aInfo[$this->left];
         } elseif ($aId == 0 && $pId == $eInfo[$this->pid]) { // if we do not have after ID
             $right_key_near = $pInfo[$this->left];
         } elseif ($pId != $eInfo[$this->pid]) {
@@ -391,7 +394,7 @@ class Tree extends AbstractTableGateway
         if ($right_key_near > $right_key) { // up
             echo "alert('move up');";
             $skew_edit = $right_key_near - $left_key + 1;
-            $sql = 'UPDATE ' . $this->table . '
+            $sql       = 'UPDATE ' . $this->table . '
                 SET
                 ' . $this->right . ' = IF(' . $this->left . ' >= ' . $eInfo[$this->left] . ', ' . $this->right . ' + ' . $skew_edit . ', IF(' . $this->right . ' < ' . $eInfo[$this->left] . ', ' . $this->right . ' + ' . $skew_tree . ', ' . $this->right . ')),
                 ' . $this->level . ' = IF(' . $this->left . ' >= ' . $eInfo[$this->left] . ', ' . $this->level . ' + ' . $skewlevel . ', ' . $this->level . '),
@@ -400,7 +403,7 @@ class Tree extends AbstractTableGateway
         } elseif ($right_key_near < $right_key) { // down
             echo "alert('move down');";
             $skew_edit = $right_key_near - $left_key + 1 - $skew_tree;
-            $sql = 'UPDATE ' . $this->table . '
+            $sql       = 'UPDATE ' . $this->table . '
                 SET
                     ' . $this->left . ' = IF(' . $this->right . ' <= ' . $right_key . ', ' . $this->left . ' + ' . $skew_edit . ', IF(' . $this->left . ' > ' . $right_key . ', ' . $this->left . ' - ' . $skew_tree . ', ' . $this->left . ')),
                     ' . $this->level . ' = IF(' . $this->right . ' <= ' . $right_key . ', ' . $this->level . ' + ' . $skewlevel . ', ' . $this->level . '),
@@ -432,7 +435,7 @@ class Tree extends AbstractTableGateway
         return false;
         $this->extTables[$tableName] = array(
             'joinCondition' => $joinCondition,
-            'fields' => $fields
+            'fields'        => $fields
         );
     }
 
@@ -461,13 +464,13 @@ class Tree extends AbstractTableGateway
 
         $keys = $this->getKeys();
         $data = $this->select(function($select) use ($info, $level, $keys) {
-                    $select->where("{$keys['left']} <= {$info[$keys['left']]}");
-                    $select->where("{$keys['right']} >= {$info[$keys['right']]}");
-                    if (null !== $level) {
-                        $select->where("{$keys['level']} = {$level}");
-                    }
-                    $select->order($keys['left']);
-                });
+            $select->where("{$keys['left']} <= {$info[$keys['left']]}");
+            $select->where("{$keys['right']} >= {$info[$keys['right']]}");
+            if (null !== $level) {
+                $select->where("{$keys['level']} = {$level}");
+            }
+            $select->order($keys['left']);
+        });
 
         $nodeSet = new NodeSet;
         foreach ($data as $node) {
@@ -492,13 +495,13 @@ class Tree extends AbstractTableGateway
 
         $keys = $this->getKeys();
         $data = $this->select(function($select) use ($info, $minLevel, $keys) {
-                    $select->where("{$keys['left']} >= {$info[$keys['left']]}");
-                    $select->where("{$keys['right']} <= {$info[$keys['right']]}");
-                    if (null !== $minLevel) {
-                        $select->where("{$keys['level']} = {$minLevel}");
-                    }
-                    $select->order($keys['left']);
-                });
+            $select->where("{$keys['left']} >= {$info[$keys['left']]}");
+            $select->where("{$keys['right']} <= {$info[$keys['right']]}");
+            if (null !== $minLevel) {
+                $select->where("{$keys['level']} = {$minLevel}");
+            }
+            $select->order($keys['left']);
+        });
 
 
 
@@ -512,7 +515,7 @@ class Tree extends AbstractTableGateway
     public function getNode($nodeId)
     {
         $data = $this->select(array($this->id => $nodeId));
-        $row = $data->current();
+        $row  = $data->current();
         if (!$row) {
             return false;
         }

@@ -11,7 +11,6 @@
 namespace GBase\Mapper;
 
 use Zend\Db\Sql\Select;
-use Zend\Db\Sql\Delete;
 use Zend\Db\Sql\Where;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Filter\Word\SeparatorToCamelCase;
@@ -40,6 +39,14 @@ Class BaseDbMapper extends AbstractDbMapper
      * @var ServiceManager
      */
     protected $serviceManager;
+
+    /**
+     * Ignore cols table in update table
+     * @var array
+     */
+    protected $ignoreColsUpdate = array(
+        'created_at',
+    );
 
     /**
      * PrimaryKey Table  
@@ -108,27 +115,53 @@ Class BaseDbMapper extends AbstractDbMapper
     }
 
     /**
-     * find row by Id 
+     * base find row
+     * 
+     * @param  string $id [description]
+     * @return object     [description]
+     */
+    protected function findByIdRow($id)
+    {
+        $select = new Select;
+        $select->from($this->getTableName());
+        $select->where->equalTo($this->getId(), $id);
+        $result = $this->select($select);
+        return $result;
+    }
+
+    /**
+     * find row by Id and return entity 
+     * 
+     * @param type $id
+     * @return object 
+     */
+    public function findById($id)
+    {
+        return $this->findByIdRow($id)->current();
+    }
+
+    /**
+     * Find row a return arryas 
+     * @param  $id 
+     * @return array 
+     */
+    public function findByIdArray($id)
+    {
+        $result = $this->findByIdRow($id)->toArray();
+        return $result ? $result[0] : array();
+    }
+
+    /**
+     *  Tratra de que sea el standar, reemplzará a findById y findByIdArray
      * 
      * @param type $id
      * @return type
      */
-    public function findById($id, $toArray = false)
+    public function _findById($id)
     {
-        $select = new Select;
-        $select->from($this->getTableName());
-
-        $where = new Where;
-        $where->equalTo($this->getId(), $id);
-
-
-        if (!$toArray) {
-            $result = $this->select($select->where($where))->current();
-            return $result;
-        }
-
-        $result = $this->select($select->where($where))->toArray();
-        return $result[0];
+        $select = $this->getSelectAlias();
+        $select->where->equalTo($this->getId(), $id);
+        return $this->executeResultSet($select);
     }
 
     /**
@@ -165,14 +198,17 @@ Class BaseDbMapper extends AbstractDbMapper
 
         //$rowData = array_filter($rowData, 'strlen');// quita todos los nulos y vacios
         $rowData = array_filter($rowData, function($element) {
-                    return !is_null($element); //retorna solo aquellos que no son null;
-                });
+            return !is_null($element); //retorna solo aquellos que no son null;
+        });
 
-        unset($rowData['created_at']); //quita el campo
+        //remove cols
+        if (!empty($this->ignoreColsUpdate)) {
+            foreach ($this->ignoreColsUpdate as $col) {
+                unset($rowData[$col]);
+            }
+        }
 
-        $update->set($rowData)
-                ->where($where);
-
+        $update->set($rowData)->where($where);
         $statement = $sql->prepareStatementForSqlObject($update);
 
         return $statement->execute();
@@ -195,8 +231,7 @@ Class BaseDbMapper extends AbstractDbMapper
      */
     public function persist($entity)
     {
-        
-       
+
         if (is_array($entity)) {
             $hydrator = new ClassMethods;
             $entity = $hydrator->hydrate($entity, $this->getEntityPrototype());
@@ -267,4 +302,3 @@ Class BaseDbMapper extends AbstractDbMapper
     }
 
 }
-
