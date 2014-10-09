@@ -95,22 +95,16 @@ Class BaseDbMapper extends AbstractDbMapper
             $select->where($where);
         }
 
-        $statement = $this->getSql()->prepareStatementForSqlObject($select);
-
-        $rowset = $statement->execute();
-
-        $columns = $select->getRawState('columns');
-
-        $key = array_keys($columns);
-        $value = array_values($columns);
+        $rowset = $this->executeResultSet($select)->toArray();
 
         $assoc = array();
         foreach ($rowset as $row) {
-            $akey = isset($row[$key[0]]) ? $row[$key[0]] : $row[$value[0]];
-            $aValue = isset($row[$key[1]]) ? $row[$key[1]] : $row[$value[1]];
-            $assoc[$akey] = $aValue;
+            reset($row);
+            $key         = current($row);
+            next($row);
+            $val         = current($row) ? current($row) : $key;
+            $assoc[$key] = $val;
         }
-
         return $assoc;
     }
 
@@ -172,7 +166,7 @@ Class BaseDbMapper extends AbstractDbMapper
     public function executeResultSet(Select $select)
     {
         $statement = $this->getSql()->prepareStatementForSqlObject($select);
-        $rowset = $statement->execute();
+        $rowset    = $statement->execute();
 
         $resultSet = new ResultSet();
         $resultSet->initialize($rowset);
@@ -191,7 +185,7 @@ Class BaseDbMapper extends AbstractDbMapper
         $this->initialize();
         $tableName = $tableName ? : $this->tableName;
 
-        $sql = $this->getSql()->setTable($tableName);
+        $sql    = $this->getSql()->setTable($tableName);
         $update = $sql->update();
 
         $rowData = $this->entityToArray($entity, $hydrator);
@@ -234,7 +228,7 @@ Class BaseDbMapper extends AbstractDbMapper
 
         if (is_array($entity)) {
             $hydrator = new ClassMethods;
-            $entity = $hydrator->hydrate($entity, $this->getEntityPrototype());
+            $entity   = $hydrator->hydrate($entity, $this->getEntityPrototype());
         }
 
         $getEntityId = $this->entityMethod($this->getId(), 'get');
