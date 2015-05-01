@@ -4,7 +4,7 @@ namespace GBase\Form\Element;
 
 use Zend\Form\Element;
 use Zend\InputFilter\InputProviderInterface;
-use Zend\I18n\Validator\Int as Integer;
+use Zend\I18n\Validator\IsInt as Integer;
 
 class Int extends Element implements InputProviderInterface
 {
