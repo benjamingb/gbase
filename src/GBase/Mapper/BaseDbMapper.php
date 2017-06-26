@@ -183,7 +183,7 @@ Class BaseDbMapper extends AbstractDbMapper
     protected function update($entity, $where, $tableName = null, HydratorInterface $hydrator = null)
     {
         $this->initialize();
-        $tableName = $tableName ? : $this->tableName;
+        $tableName = $tableName ?: $this->tableName;
 
         $sql    = $this->getSql()->setTable($tableName);
         $update = $sql->update();
@@ -239,6 +239,12 @@ Class BaseDbMapper extends AbstractDbMapper
             $where->equalTo($this->getId(), $entity->$getEntityId());
             $this->update($entity, $where, $this->getTableName());
         } else {
+            //var_dump($entity);            exit;
+            
+            if (empty($entity->$getEntityId())) {
+                $entity->$setEntityId(null);
+            }
+            //var_dump($entity);           exit;
             $result = $this->insert($entity, $this->getTableName());
             $entity->$setEntityId($result->getGeneratedValue());
         }
