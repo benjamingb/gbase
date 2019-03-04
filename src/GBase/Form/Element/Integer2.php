@@ -4,9 +4,9 @@ namespace GBase\Form\Element;
 
 use Zend\Form\Element;
 use Zend\InputFilter\InputProviderInterface;
-use Zend\I18n\Validator\IsInt as Integer;
+use Zend\I18n\Validator\IsInt;
 
-class Int extends Element implements InputProviderInterface
+class Integer2 extends Element implements InputProviderInterface
 {
 
     /**
@@ -22,7 +22,7 @@ class Int extends Element implements InputProviderInterface
     protected function getValidator()
     {
         if (null === $this->validator) {
-            $this->validator = new Integer(array(
+            $this->validator = new IsInt(array(
                 'locale' => 'en_US', // HTML5 uses "100.01" format
             ));
         }

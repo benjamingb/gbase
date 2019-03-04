@@ -27,7 +27,7 @@ class BaseService extends EventProvider implements EventManagerAwareInterface
         $this->setEventManager(new EventManager());
     }
 
-    public function findById($id)
+    /*public function findById($id)
     {
         return $this->mapper->findById($id);
     }
@@ -68,7 +68,7 @@ class BaseService extends EventProvider implements EventManagerAwareInterface
     public function getMapper()
     {
         return $this->mapper;
-    }
+    }*/
 
     /**
      * Retrieve service manager instance
